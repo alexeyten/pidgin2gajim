@@ -19,6 +19,7 @@ class PidginLogParser():
     filename = None
     dt = None
     timeadjust = 0
+    jid = None
 
     def __init__(self, filename):
         print u"Parsing file %s:" % filename
@@ -26,9 +27,11 @@ class PidginLogParser():
         self.FilenameParse()
 
         f = open(filename, 'r')
+        self.FirstLineParse(f.next())
+
         for line in f:
             res = self.LineParse(line)
-           # print res
+            print res
             #if p.pos:
             #    print "%s: %s %s" % (p.direction, p.time, line[p.pos:]),
 
@@ -37,11 +40,19 @@ class PidginLogParser():
         \.
         (\d\d)(\d\d)(\d\d)([+-]\d{4})(\w+)
     """, re.X | re.U | re.I)
+
     def FilenameParse(self):
         m = self._re_filename.search(self.filename).groups()
         self.dt = parser.parse("%s-%s-%s 00:00:00 %s" % (m[0:3]+m[6:7]))
         print self.dt
 
+    _re_firstline = re.compile(r"Conversation with (.+?) at", re.U)
+
+    def FirstLineParse(self, line):
+        m = self._re_firstline.search(line)
+        self.jid = m.group(1)
+        if re.match(r"^\d+$", self.jid):
+            self.jid += "@ICQ"
 
     _re_log_line = re.compile(r"""
         <font\s+color="\#(?P<color>[0-9a-f]{6})">
@@ -67,15 +78,17 @@ class PidginLogParser():
         t = timegm(t.utctimetuple())
         res = (
             self._color2dir[m.group('color')],
-            parser.parse(m.group('time'), default = self.dt),
+            self.jid,
+            #parser.parse(m.group('time'), default = self.dt),
             t,
             m.group('nick'),
-            m.group('log')
+           # m.group('log')
         )
         return res
 
 if __name__ == '__main__':
     Parser = PidginLogParser("2009-01-22.143850+0300MSK.html")
+    Parser = PidginLogParser("2009-01-21.143316+0300MSK.html")
     Parser = PidginLogParser("logs/2009-01-29.041110-0600CST.html")
     Parser = PidginLogParser("logs/2009-01-29.220829+0900YAKT.html")
 
