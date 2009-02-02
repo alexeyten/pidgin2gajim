@@ -31,7 +31,7 @@ class PidginLogParser():
 
         for line in f:
             res = self.LineParse(line)
-            print res
+            #print res
             #if p.pos:
             #    print "%s: %s %s" % (p.direction, p.time, line[p.pos:]),
 
@@ -87,9 +87,10 @@ class PidginLogParser():
         return res
 
 if __name__ == '__main__':
-    Parser = PidginLogParser("2009-01-22.143850+0300MSK.html")
-    Parser = PidginLogParser("2009-01-21.143316+0300MSK.html")
-    Parser = PidginLogParser("logs/2009-01-29.041110-0600CST.html")
-    Parser = PidginLogParser("logs/2009-01-29.220829+0900YAKT.html")
+    import glob
+    for fname in glob.iglob('*.html'):
+        Parser = PidginLogParser(fname)
+    for fname in glob.iglob('logs/*.html'):
+        Parser = PidginLogParser(fname)
 
 # vim: et ts=4 sw=4
