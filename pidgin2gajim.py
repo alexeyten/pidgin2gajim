@@ -4,7 +4,7 @@
 import re
 import sys
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from calendar import timegm
 from dateutil import parser, tz
 
@@ -18,7 +18,7 @@ class PidginLogParser():
 
     filename = None
     dt = None
-    timeadjust = 0
+    lasttimestamp = 0
     jid = None
 
     def __init__(self, filename):
@@ -31,7 +31,11 @@ class PidginLogParser():
 
         for line in f:
             res = self.LineParse(line)
-            #print res
+            if res == None:
+                print line
+            else:
+                print time.ctime(res[2])
+
             #if p.pos:
             #    print "%s: %s %s" % (p.direction, p.time, line[p.pos:]),
 
@@ -58,7 +62,7 @@ class PidginLogParser():
         <font\s+color="\#(?P<color>[0-9a-f]{6})">
         <font\s+size="2">\((?P<time>.+?)\)</font>
         \s+
-        <b>(?P<nick>.+?):</b>
+        <b>(?P<nick>.+?):?</b>
         </font>
         \s+
         (?P<log>.+)
@@ -68,6 +72,8 @@ class PidginLogParser():
     _color2dir = {
         '16569E': constants.KIND_CHAT_MSG_SENT,
         'A82F2F': constants.KIND_CHAT_MSG_RECV,
+
+        '062585': "GUESS",
     }
 
     def LineParse(self, line):
@@ -76,21 +82,32 @@ class PidginLogParser():
             return None
         t = parser.parse(m.group('time'), default = self.dt)
         t = timegm(t.utctimetuple())
+
+        if t < self.lasttimestamp:
+            self.dt = self.dt + timedelta(days = 1)
+            t = parser.parse(m.group('time'), default = self.dt)
+            t = timegm(t.utctimetuple())
+
+        self.lasttimestamp = t
+
         res = (
             self._color2dir[m.group('color')],
             self.jid,
-            #parser.parse(m.group('time'), default = self.dt),
             t,
             m.group('nick'),
-           # m.group('log')
+            m.group('log')
         )
         return res
 
 if __name__ == '__main__':
-    import glob
-    for fname in glob.iglob('*.html'):
-        Parser = PidginLogParser(fname)
-    for fname in glob.iglob('logs/*.html'):
-        Parser = PidginLogParser(fname)
+    if len(sys.argv) > 1:
+        for fname in sys.argv[1:]:
+            Parser = PidginLogParser(fname)
+    else:
+        import glob
+        for fname in glob.iglob('*.html'):
+            Parser = PidginLogParser(fname)
+        for fname in glob.iglob('logs/*.html'):
+            Parser = PidginLogParser(fname)
 
 # vim: et ts=4 sw=4
